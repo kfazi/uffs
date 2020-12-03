@@ -60,9 +60,9 @@
  */
 URET uffs_BlockInfoInitCache(uffs_Device *dev, int maxCachedBlocks)
 {
-	uffs_BlockInfo * blockInfos = NULL;
-	uffs_PageSpare * pageSpares = NULL;
-	void * buf = NULL;
+	uffs_BlockInfo *blockInfos = NULL;
+	uffs_PageSpare *pageSpares = NULL;
+	void *buf = NULL;
 	uffs_BlockInfo *work = NULL;
 	int size, i, j;
 
@@ -73,10 +73,9 @@ URET uffs_BlockInfoInitCache(uffs_Device *dev, int maxCachedBlocks)
 		uffs_BlockInfoReleaseCache(dev);
 	}
 
-	size = ( 
-			sizeof(uffs_BlockInfo) +
-			sizeof(uffs_PageSpare) * dev->attr->pages_per_block
-			) * maxCachedBlocks;
+	size = (sizeof(uffs_BlockInfo) +
+			sizeof(uffs_PageSpare) * dev->attr->pages_per_block) *
+	  maxCachedBlocks;
 
 	if (dev->mem.blockinfo_pool_size == 0) {
 		if (dev->mem.malloc) {
@@ -115,14 +114,14 @@ URET uffs_BlockInfoInitCache(uffs_Device *dev, int maxCachedBlocks)
 	work->block = UFFS_INVALID_BLOCK;
 
 	for (i = 0; i < maxCachedBlocks - 2; i++) {
-		work = &(blockInfos[i+1]);
+		work = &(blockInfos[i + 1]);
 		work->prev = &(blockInfos[i]);
-		work->next = &(blockInfos[i+2]);
+		work->next = &(blockInfos[i + 2]);
 		work->ref_count = 0;
 		work->block = UFFS_INVALID_BLOCK;
 	}
 	//the last node
-	work = &(blockInfos[i+1]);
+	work = &(blockInfos[i + 1]);
 	work->prev = &(blockInfos[i]);
 	work->next = NULL;
 	work->block = UFFS_INVALID_BLOCK;
@@ -132,7 +131,7 @@ URET uffs_BlockInfoInitCache(uffs_Device *dev, int maxCachedBlocks)
 	//initialize spares
 	work = dev->bc.head;
 	for (i = 0; i < maxCachedBlocks; i++) {
-		work->spares = &(pageSpares[i*dev->attr->pages_per_block]);
+		work->spares = &(pageSpares[i * dev->attr->pages_per_block]);
 		for (j = 0; j < dev->attr->pages_per_block; j++) {
 			work->spares[j].expired = 1;
 		}
@@ -155,7 +154,7 @@ URET uffs_BlockInfoReleaseCache(uffs_Device *dev)
 		for (work = dev->bc.head; work != NULL; work = work->next) {
 			if (work->ref_count != 0) {
 				uffs_Perror(UFFS_MSG_SERIOUS,
-					"There have refed block info cache, release cache fail.");
+							"There have refed block info cache, release cache fail.");
 				return U_FAIL;
 			}
 		}
@@ -227,7 +226,7 @@ URET uffs_BlockInfoLoad(uffs_Device *dev, uffs_BlockInfo *work, int page)
 				continue;
 
 			ret = uffs_FlashReadPageTag(dev, work->block, i,
-											&(spare->tag));
+										&(spare->tag));
 
 			uffs_BadBlockAddByFlashResult(dev, work->block, ret);
 
@@ -235,8 +234,8 @@ URET uffs_BlockInfoLoad(uffs_Device *dev, uffs_BlockInfo *work, int page)
 				uffs_Perror(UFFS_MSG_SERIOUS,
 							"load block %d page %d spare fail.",
 							work->block, i);
-				TAG_VALID_BIT(&(spare->tag)) = TAG_INVALID;	
-				nfailed++;	
+				TAG_VALID_BIT(&(spare->tag)) = TAG_INVALID;
+				nfailed++;
 			}
 
 			spare->expired = 0;
@@ -253,9 +252,9 @@ URET uffs_BlockInfoLoad(uffs_Device *dev, uffs_BlockInfo *work, int page)
 		spare = &(work->spares[page]);
 		if (spare->expired) {
 			ret = uffs_FlashReadPageTag(dev, work->block, page,
-											&(spare->tag));
+										&(spare->tag));
 
-            uffs_BadBlockAddByFlashResult(dev, work->block, ret);
+			uffs_BadBlockAddByFlashResult(dev, work->block, ret);
 
 			if (UFFS_FLASH_HAVE_ERR(ret)) {
 				uffs_Perror(UFFS_MSG_SERIOUS,
@@ -279,10 +278,10 @@ URET uffs_BlockInfoLoad(uffs_Device *dev, uffs_BlockInfo *work, int page)
  * \retval NULL cache not found
  * \retval non-NULL found cache pointer
  */
-uffs_BlockInfo * uffs_BlockInfoFindInCache(uffs_Device *dev, int block)
+uffs_BlockInfo *uffs_BlockInfoFindInCache(uffs_Device *dev, int block)
 {
 	uffs_BlockInfo *work;
-	
+
 	//search cached block
 	for (work = dev->bc.head; work != NULL; work = work->next) {
 		if (work->block == block) {
@@ -305,7 +304,7 @@ uffs_BlockInfo * uffs_BlockInfoFindInCache(uffs_Device *dev, int block)
  * \retval NULL caches used out
  * \retval non-NULL buffer pointer of given block
  */
-uffs_BlockInfo * uffs_BlockInfoGet(uffs_Device *dev, int block)
+uffs_BlockInfo *uffs_BlockInfoGet(uffs_Device *dev, int block)
 {
 	uffs_BlockInfo *work;
 	int i;
@@ -318,11 +317,11 @@ uffs_BlockInfo * uffs_BlockInfoGet(uffs_Device *dev, int block)
 
 	//can't find block from cache, need to find a free(unlocked) cache
 	for (work = dev->bc.head; work != NULL; work = work->next) {
-		if(work->ref_count == 0) break;
+		if (work->ref_count == 0) break;
 	}
 	if (work == NULL) {
 		//caches used out !
-		uffs_Perror(UFFS_MSG_SERIOUS,  "insufficient block info cache");
+		uffs_Perror(UFFS_MSG_SERIOUS, "insufficient block info cache");
 		return NULL;
 	}
 
@@ -349,11 +348,10 @@ uffs_BlockInfo * uffs_BlockInfoGet(uffs_Device *dev, int block)
  */
 void uffs_BlockInfoPut(uffs_Device *dev, uffs_BlockInfo *p)
 {
-	if (p)
-	{
+	if (p) {
 		if (p->ref_count == 0) {
 			uffs_Perror(UFFS_MSG_SERIOUS,
-				"Put an unused block info cache back ?");
+						"Put an unused block info cache back ?");
 		}
 		else {
 			p->ref_count--;
@@ -436,4 +434,3 @@ void uffs_BlockInfoInitErased(uffs_Device *dev, uffs_BlockInfo *p)
 	}
 	p->expired_count = 0;
 }
-

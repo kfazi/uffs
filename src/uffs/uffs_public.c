@@ -72,7 +72,7 @@ UBOOL uffs_IsSrcNewerThanObj(int src, int obj)
 	case 2:
 		return U_FALSE;
 	default:
-		uffs_Perror(UFFS_MSG_SERIOUS,  "time stamp out of range !");
+		uffs_Perror(UFFS_MSG_SERIOUS, "time stamp out of range !");
 		break;
 	}
 
@@ -100,7 +100,7 @@ u16 uffs_FindBestPageInBlock(uffs_Device *dev, uffs_BlockInfo *bc, u16 page)
 	if (!uffs_Assert(page != UFFS_INVALID_PAGE, "invalid param !"))
 		return page;	// just in case ...
 
-	uffs_BlockInfoLoad(dev, bc, page); // load old page
+	uffs_BlockInfoLoad(dev, bc, page);	// load old page
 	tag_old = GET_TAG(bc, page);
 
 	if (!uffs_Assert(TAG_IS_GOOD(tag_old), "try to find a invalid page ?"))
@@ -126,8 +126,7 @@ u16 uffs_FindBestPageInBlock(uffs_Device *dev, uffs_BlockInfo *bc, u16 page)
 		if (TAG_IS_GOOD(tag) &&
 			TAG_PAGE_ID(tag) == TAG_PAGE_ID(tag_old) &&
 			TAG_PARENT(tag) == TAG_PARENT(tag_old) &&
-			TAG_SERIAL(tag) == TAG_SERIAL(tag_old))
-		{
+			TAG_SERIAL(tag) == TAG_SERIAL(tag_old)) {
 			break;
 		}
 	}
@@ -200,13 +199,12 @@ UBOOL uffs_IsThisBlockUsed(uffs_Device *dev, uffs_BlockInfo *bc)
  */
 int uffs_GetBlockTimeStamp(uffs_Device *dev, uffs_BlockInfo *bc)
 {
-	if(uffs_IsThisBlockUsed(dev, bc) == U_FALSE) 
+	if (uffs_IsThisBlockUsed(dev, bc) == U_FALSE)
 		return uffs_GetFirstBlockTimeStamp();
-	else{
+	else {
 		uffs_BlockInfoLoad(dev, bc, 0);
 		return TAG_BLOCK_TS(GET_TAG(bc, 0));
 	}
-
 }
 
 /** 
@@ -229,7 +227,7 @@ u16 uffs_FindFirstFreePage(uffs_Device *dev,
 			return i;
 	}
 
-	return UFFS_INVALID_PAGE; //free page not found
+	return UFFS_INVALID_PAGE;	//free page not found
 }
 
 
@@ -369,7 +367,7 @@ int uffs_GetFreePagesCount(uffs_Device *dev, uffs_BlockInfo *bc)
 			count++;
 		}
 		else {
-			if (TAG_IS_GOOD(GET_TAG(bc, i)))  // it won't be any free page if we see a good tag.
+			if (TAG_IS_GOOD(GET_TAG(bc, i)))	// it won't be any free page if we see a good tag.
 				break;
 		}
 	}
@@ -407,10 +405,9 @@ UBOOL uffs_IsPageErased(uffs_Device *dev, uffs_BlockInfo *bc, u16 page)
 unsigned long uffs_GetDeviceUsed(uffs_Device *dev)
 {
 	return (dev->par.end - dev->par.start + 1 -
-			dev->tree.bad_count	- dev->tree.erased_count
-			) *
-				dev->attr->page_data_size *
-					dev->attr->pages_per_block;
+			dev->tree.bad_count - dev->tree.erased_count) *
+	  dev->attr->page_data_size *
+	  dev->attr->pages_per_block;
 }
 
 /** 
@@ -419,8 +416,8 @@ unsigned long uffs_GetDeviceUsed(uffs_Device *dev)
 unsigned long uffs_GetDeviceFree(uffs_Device *dev)
 {
 	return dev->tree.erased_count *
-			dev->attr->page_data_size *
-				dev->attr->pages_per_block;
+	  dev->attr->page_data_size *
+	  dev->attr->pages_per_block;
 }
 
 /** 
@@ -429,8 +426,8 @@ unsigned long uffs_GetDeviceFree(uffs_Device *dev)
 unsigned long uffs_GetDeviceTotal(uffs_Device *dev)
 {
 	return (dev->par.end - dev->par.start + 1) *
-				dev->attr->page_data_size *
-					dev->attr->pages_per_block;
+	  dev->attr->page_data_size *
+	  dev->attr->pages_per_block;
 }
 
 /**
@@ -443,8 +440,8 @@ URET uffs_LoadMiniHeader(uffs_Device *dev,
 	struct uffs_FlashOpsSt *ops = dev->ops;
 
 	if (ops->ReadPageWithLayout) {
-		ret = ops->ReadPageWithLayout(dev, block, page, (u8 *)header, 
-										sizeof(struct uffs_MiniHeaderSt), NULL, NULL, NULL);
+		ret = ops->ReadPageWithLayout(dev, block, page, (u8 *)header,
+									  sizeof(struct uffs_MiniHeaderSt), NULL, NULL, NULL);
 	}
 	else {
 		ret = ops->ReadPage(dev, block, page, (u8 *)header, sizeof(struct uffs_MiniHeaderSt), NULL, NULL, 0);
@@ -454,4 +451,3 @@ URET uffs_LoadMiniHeader(uffs_Device *dev,
 
 	return UFFS_FLASH_HAVE_ERR(ret) ? U_FAIL : U_SUCC;
 }
-
