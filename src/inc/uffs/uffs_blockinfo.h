@@ -43,15 +43,15 @@
 #include "uffs/uffs_core.h"
 
 #ifdef __cplusplus
-extern "C"{
+extern "C" {
 #endif
 /** 
  * \struct uffs_PageSpareSt
  * \brief this structure is for storing uffs tag and more. 
  */
 struct uffs_PageSpareSt {
-	uffs_Tags tag;			//!< page tag
-	int expired:1;
+	uffs_Tags tag;	//!< page tag
+	int expired : 1;
 };
 
 /** 
@@ -64,7 +64,7 @@ struct uffs_BlockInfoSt {
 	struct uffs_BlockInfoSt *prev;
 	u16 block;							//!< block number
 	struct uffs_PageSpareSt *spares;	//!< page spare info array
-	int expired_count;					//!< how many pages expired in this block ? 
+	int expired_count;					//!< how many pages expired in this block ?
 	int ref_count;						//!< reference counter, it's safe to reuse this block memory when the counter is 0.
 };
 
@@ -79,13 +79,13 @@ URET uffs_BlockInfoInitCache(uffs_Device *dev, int maxCachedBlocks);
 URET uffs_BlockInfoReleaseCache(uffs_Device *dev);
 
 /** load page spare to block info cache */
-URET uffs_BlockInfoLoad(uffs_Device *dev, uffs_BlockInfo *work, int page);
+URET uffs_BlockInfoLoad(uffs_Device *dev, uffs_BlockInfo *work, int page, struct uffs_MiniHeaderSt *header);
 
 /** find block info cache */
-uffs_BlockInfo * uffs_BlockInfoFindInCache(uffs_Device *dev, int block);
+uffs_BlockInfo *uffs_BlockInfoFindInCache(uffs_Device *dev, int block);
 
 /** get block info cache, load it on demand */
-uffs_BlockInfo * uffs_BlockInfoGet(uffs_Device *dev, int block);
+uffs_BlockInfo *uffs_BlockInfoGet(uffs_Device *dev, int block);
 
 /** put info cache back to pool, should be called with #uffs_BlockInfoGet in pairs. */
 void uffs_BlockInfoPut(uffs_Device *dev, uffs_BlockInfo *p);

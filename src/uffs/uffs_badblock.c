@@ -46,10 +46,10 @@
 static const char *uffs_BadBlockPendingTypeName(int mark)
 {
 	switch (mark) {
-	case UFFS_PENDING_BLK_RECOVER: 	return "Recover";
-	case UFFS_PENDING_BLK_REFRESH: 	return "Refresh";
-	case UFFS_PENDING_BLK_CLEANUP: 	return "Cleanup";
-	default: 						return "Unknown";
+	case UFFS_PENDING_BLK_RECOVER: return "Recover";
+	case UFFS_PENDING_BLK_REFRESH: return "Refresh";
+	case UFFS_PENDING_BLK_CLEANUP: return "Cleanup";
+	default: return "Unknown";
 	}
 }
 
@@ -101,7 +101,7 @@ static void process_pending_recover(uffs_Device *dev, uffs_PendingBlock *s)
 		return;
 	}
 
-	region = SEARCH_REGION_DIR|SEARCH_REGION_FILE|SEARCH_REGION_DATA;
+	region = SEARCH_REGION_DIR | SEARCH_REGION_FILE | SEARCH_REGION_DATA;
 	bad = uffs_TreeFindNodeByBlock(dev, s->block, &region);
 	if (bad == NULL) {
 		uffs_Perror(UFFS_MSG_SERIOUS,
@@ -127,12 +127,12 @@ retry:
 	newBc = uffs_BlockInfoFindInCache(dev, good->u.list.block);
 
 	// read all spares of old block
-	uffs_BlockInfoLoad(dev, bc, UFFS_ALL_PAGES);
+	uffs_BlockInfoLoad(dev, bc, UFFS_ALL_PAGES, NULL);
 
 	for (i = 0; i < dev->attr->pages_per_block; i++) {
 		page = uffs_FindPageInBlockWithPageId(dev, bc, i);
 		if (page == UFFS_INVALID_PAGE) {
-			break;  //end of last valid page, normal break
+			break;	//end of last valid page, normal break
 		}
 		page = uffs_FindBestPageInBlock(dev, bc, page);
 		if (page == UFFS_INVALID_PAGE) {
@@ -142,7 +142,7 @@ retry:
 		}
 		tag = GET_TAG(bc, page);
 		buf = uffs_BufClone(dev, NULL);
-		if (buf == NULL) {	
+		if (buf == NULL) {
 			uffs_Perror(UFFS_MSG_SERIOUS, "Can't clone a new buf!");
 			succRecov = U_FALSE;
 			break;
@@ -179,7 +179,7 @@ retry:
 		buf->serial = TAG_SERIAL(tag);
 		buf->type = TAG_TYPE(tag);
 		buf->page_id = TAG_PAGE_ID(tag);
-		
+
 		// if good block info already been loaded then use it, otherwise use local tag
 		if (newBc) {
 			newTag = GET_TAG(newBc, i);
@@ -200,7 +200,7 @@ retry:
 			// put back block info cache before retry
 			if (newBc)
 				uffs_BlockInfoPut(dev, newBc);
-		
+
 			// we have a new bad block ? mark it and retry.
 			uffs_Perror(UFFS_MSG_NOISY, "A new bad block is discovered during bad block recover ...");
 			uffs_BadBlockProcessNode(dev, good);
@@ -237,7 +237,7 @@ retry:
 			bad->u.data.block = good->u.list.block;
 			type = UFFS_TYPE_DATA;
 		}
-			
+
 		//from now, the 'bad' is actually good block :)))
 		uffs_Perror(UFFS_MSG_NOISY,
 					"recovered bad block %d replaced by %d, type %d!",
@@ -246,30 +246,29 @@ retry:
 
 		//we reuse the 'good' node as bad block node, and process the bad block.
 		good->u.list.block = s->block;
-        switch(s->mark) {
-            case UFFS_PENDING_BLK_RECOVER:
-            case UFFS_PENDING_BLK_MARKBAD:
-                uffs_BadBlockProcessNode(dev, good);
-                break;
-            case UFFS_PENDING_BLK_REFRESH:
-            case UFFS_PENDING_BLK_CLEANUP:
-                uffs_TreeEraseNode(dev, good);
-                uffs_TreeInsertToErasedListTail(dev, good); //put back to erased list
-                break;
-            default:
-                uffs_Perror(UFFS_MSG_SERIOUS, "Unrecognized pending mark: %d", s->mark);
-                break;
-        }
+		switch (s->mark) {
+		case UFFS_PENDING_BLK_RECOVER:
+		case UFFS_PENDING_BLK_MARKBAD:
+			uffs_BadBlockProcessNode(dev, good);
+			break;
+		case UFFS_PENDING_BLK_REFRESH:
+		case UFFS_PENDING_BLK_CLEANUP:
+			uffs_TreeEraseNode(dev, good);
+			uffs_TreeInsertToErasedListTail(dev, good);	//put back to erased list
+			break;
+		default:
+			uffs_Perror(UFFS_MSG_SERIOUS, "Unrecognized pending mark: %d", s->mark);
+			break;
+		}
 	}
 	else {
 		if (goodBlockIsDirty == U_TRUE) {
 			uffs_TreeEraseNode(dev, good);	// erase the block if the block is dirty
 		}
-		uffs_TreeInsertToErasedListTail(dev, good); //put back to erased list
+		uffs_TreeInsertToErasedListTail(dev, good);	//put back to erased list
 	}
 
 	uffs_BlockInfoPut(dev, bc);
-	
 }
 
 /** 
@@ -283,8 +282,8 @@ void uffs_BadBlockRecover(uffs_Device *dev)
 	while (dev->pending.count > 0) {
 		dev->pending.count--;
 		s = &dev->pending.list[dev->pending.count];
-		uffs_Perror(UFFS_MSG_NOISY, "Process pending block %d - %s", 
-						s->block, uffs_BadBlockPendingTypeName(s->mark));
+		uffs_Perror(UFFS_MSG_NOISY, "Process pending block %d - %s",
+					s->block, uffs_BadBlockPendingTypeName(s->mark));
 		dev->pending.block_in_recovery = s->block;
 		process_pending_recover(dev, s);
 	}
@@ -298,7 +297,7 @@ void uffs_BadBlockAdd(uffs_Device *dev, int block, u8 mark)
 	uffs_PendingBlock *s;
 	int i;
 
-	// check if the block is being processed right now 
+	// check if the block is being processed right now
 	if (dev->pending.block_in_recovery == block)
 		return;
 
@@ -307,18 +306,18 @@ void uffs_BadBlockAdd(uffs_Device *dev, int block, u8 mark)
 		s = &dev->pending.list[i];
 		if (s->block == block) {
 
-			if (s->mark < mark) { 	// RECOVER would overwrite REFRESH, MARKBAD would overwrite RECOVER/REFRESH
+			if (s->mark < mark) {	// RECOVER would overwrite REFRESH, MARKBAD would overwrite RECOVER/REFRESH
 				s->mark = mark;
 				uffs_Perror(UFFS_MSG_NOISY, "Change pending block %d - %s",
-								block, uffs_BadBlockPendingTypeName(s->mark));
+							block, uffs_BadBlockPendingTypeName(s->mark));
 			}
 			return;
 		}
 	}
 
-	// check if there is space in pending list		
+	// check if there is space in pending list
 	if (dev->pending.count >= CONFIG_MAX_PENDING_BLOCKS) {
-		uffs_Perror(UFFS_MSG_SERIOUS, 
+		uffs_Perror(UFFS_MSG_SERIOUS,
 					"Too many pending bad blocks, please increase CONFIG_MAX_PENDING_BLOCKS !");
 		return;
 	}
@@ -328,7 +327,7 @@ void uffs_BadBlockAdd(uffs_Device *dev, int block, u8 mark)
 	s->block = block;
 	s->mark = mark;
 	uffs_Perror(UFFS_MSG_NOISY, "Add pending block %d - %s",
-					block, uffs_BadBlockPendingTypeName(mark));
+				block, uffs_BadBlockPendingTypeName(mark));
 }
 
 /** put a new block to the bad block pending list by flash operation result (flash_op_ret)
@@ -336,25 +335,25 @@ void uffs_BadBlockAdd(uffs_Device *dev, int block, u8 mark)
  */
 int uffs_BadBlockAddByFlashResult(uffs_Device *dev, int block, int flash_op_ret)
 {
-    int pending_type = UFFS_PENDING_BLK_NONE;
+	int pending_type = UFFS_PENDING_BLK_NONE;
 
 #ifdef CONFIG_UFFS_REFRESH_BLOCK
 	if (flash_op_ret == UFFS_FLASH_ECC_OK) {
-        pending_type = UFFS_PENDING_BLK_REFRESH;
-    }
+		pending_type = UFFS_PENDING_BLK_REFRESH;
+	}
 	else
 #endif
-    if (UFFS_FLASH_IS_NON_RECOVER_BAD_BLOCK(flash_op_ret)) {
-        pending_type = UFFS_PENDING_BLK_MARKBAD;
-    }
+	  if (UFFS_FLASH_IS_NON_RECOVER_BAD_BLOCK(flash_op_ret)) {
+		pending_type = UFFS_PENDING_BLK_MARKBAD;
+	}
 	else if (UFFS_FLASH_IS_BAD_BLOCK(flash_op_ret)) {
 		pending_type = UFFS_PENDING_BLK_RECOVER;
-    }
+	}
 
-    if (pending_type != UFFS_PENDING_BLK_NONE)
-        uffs_BadBlockAdd(dev, block, pending_type);
+	if (pending_type != UFFS_PENDING_BLK_NONE)
+		uffs_BadBlockAdd(dev, block, pending_type);
 
-    return pending_type;
+	return pending_type;
 }
 
 /**
@@ -390,7 +389,7 @@ URET uffs_BadBlockPendingRemove(uffs_Device *dev, int block)
 	if (i < dev->pending.count) {
 		uffs_Perror(UFFS_MSG_NOISY, "pending block %d removed", dev->pending.list[i].block);
 		for (; i < dev->pending.count - 1; i++) {
-			dev->pending.list[i] = dev->pending.list[i+1];
+			dev->pending.list[i] = dev->pending.list[i + 1];
 		}
 		dev->pending.count--;
 		return U_SUCC;

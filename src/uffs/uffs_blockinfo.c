@@ -213,7 +213,7 @@ static void _MoveBcToTail(uffs_Device *dev, uffs_BlockInfo *bc)
  * \retval U_FAIL fail to load
  * \note work->block must be set before load block info
  */
-URET uffs_BlockInfoLoad(uffs_Device *dev, uffs_BlockInfo *work, int page)
+URET uffs_BlockInfoLoad(uffs_Device *dev, uffs_BlockInfo *work, int page, struct uffs_MiniHeaderSt *header)
 {
 	int i, ret, nfailed;
 	uffs_PageSpare *spare;
@@ -251,8 +251,12 @@ URET uffs_BlockInfoLoad(uffs_Device *dev, uffs_BlockInfo *work, int page)
 		}
 		spare = &(work->spares[page]);
 		if (spare->expired) {
-			ret = uffs_FlashReadPageTag(dev, work->block, page,
-										&(spare->tag));
+			if (header) {
+				ret = uffs_LoadMiniHeaderWithPageTag(dev, work->block, page, header, &(spare->tag));
+			}
+			else {
+				ret = uffs_FlashReadPageTag(dev, work->block, page, &(spare->tag));
+			}
 
 			uffs_BadBlockAddByFlashResult(dev, work->block, ret);
 

@@ -961,3 +961,53 @@ ext:
 
 	return ret;
 }
+
+URET uffs_LoadMiniHeaderWithPageTag(uffs_Device *dev, int block, u16 page, struct uffs_MiniHeaderSt *header, uffs_Tags *tag)
+{
+	int ret;
+	int ret_tmp;
+	struct uffs_FlashOpsSt *ops = dev->ops;
+	u8 *spare_buf;
+
+	spare_buf = (u8 *)uffs_PoolGet(SPOOL(dev));
+	if (spare_buf == NULL)
+		return U_FAIL;
+
+	if (ops->ReadPageWithLayout) {
+		ret = ops->ReadPageWithLayout(dev, block, page, (u8 *)header,
+									  sizeof(struct uffs_MiniHeaderSt), NULL, tag ? &tag->s : NULL, NULL);
+	}
+	else {
+		ret = ops->ReadPage(dev, block, page, (u8 *)header, sizeof(struct uffs_MiniHeaderSt), NULL, spare_buf, dev->mem.spare_data_size);
+		if (tag) {
+			tag->seal_byte = SEAL_BYTE(dev, spare_buf);
+
+			if (!UFFS_FLASH_HAVE_ERR(ret))
+				uffs_FlashUnloadSpare(dev, spare_buf, &tag->s, NULL);
+		}
+	}
+
+	uffs_PoolPut(SPOOL(dev), spare_buf);
+
+	if (!UFFS_FLASH_HAVE_ERR(ret) && tag) {
+		if (!TAG_IS_SEALED(tag))	// not sealed ? don't try tag ECC correction
+			return UFFS_FLASH_HAVE_ERR(ret) ? U_FAIL : U_SUCC;
+
+		// do tag ecc correction
+		if (dev->attr->ecc_opt != UFFS_ECC_NONE) {
+			ret_tmp = TagEccCorrect(&tag->s);
+			ret_tmp = (ret_tmp < 0 ? UFFS_FLASH_ECC_FAIL :
+									 (ret_tmp > 0 ? UFFS_FLASH_ECC_OK : UFFS_FLASH_NO_ERR));
+
+			if (UFFS_FLASH_HAVE_ERR(ret_tmp) || ret_tmp == UFFS_FLASH_ECC_OK) {
+				// overwrite ret with ret_tmp only when tag ECC failed or corrected bit flip(s),
+				// so that if flash driver has the capability of ECC, the result will propagete to upper level.
+				ret = ret_tmp;
+			}
+		}
+	}
+
+	dev->st.page_header_read_count++;
+
+	return UFFS_FLASH_HAVE_ERR(ret) ? U_FAIL : U_SUCC;
+}

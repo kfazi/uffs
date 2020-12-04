@@ -287,7 +287,7 @@ static URET _BuildValidTreeNode(uffs_Device *dev,
 	int ret;
 
 	// check the first page on the block ...
-	if (uffs_BlockInfoLoad(dev, bc, 0) == U_FAIL) {
+	if (uffs_BlockInfoLoad(dev, bc, 0, NULL) == U_FAIL) {
 		if (uffs_TreeProcessPendingBadBlock(dev, node, bc->block) == U_TRUE) {
 			// this is a bad block, processed.
 			return U_SUCC;
@@ -342,7 +342,7 @@ static URET _BuildValidTreeNode(uffs_Device *dev,
 			uffs_Perror(UFFS_MSG_SERIOUS, "can't get block info ");
 			return U_FAIL;
 		}
-		uffs_BlockInfoLoad(dev, bc_alt, 0);
+		uffs_BlockInfoLoad(dev, bc_alt, 0, NULL);
 		if (uffs_IsSrcNewerThanObj(
 			  TAG_BLOCK_TS(tag),
 			  TAG_BLOCK_TS(GET_TAG(bc_alt, 0))) == U_TRUE) {
@@ -389,7 +389,7 @@ static URET _BuildValidTreeNode(uffs_Device *dev,
 		buf = uffs_BufClone(dev, NULL);
 		if (buf == NULL)
 			return U_FAIL;
-		if (uffs_BlockInfoLoad(dev, bc, UFFS_ALL_PAGES) == U_FAIL) {
+		if (uffs_BlockInfoLoad(dev, bc, UFFS_ALL_PAGES, NULL) == U_FAIL) {
 			// load block info failed ? check if it's due to new bad block ...
 			if (uffs_TreeProcessPendingBadBlock(dev, node, block) == U_TRUE) {
 				// this is a bad block, processed.
@@ -485,7 +485,7 @@ static URET _ScanAndFixUnCleanPage(uffs_Device *dev, uffs_BlockInfo *bc)
 		most case: read one spare.
 	*/
 	for (page = dev->attr->pages_per_block - 1; page > 0; page--) {
-		loadStatus = uffs_BlockInfoLoad(dev, bc, page);
+		loadStatus = uffs_BlockInfoLoad(dev, bc, page, &header);
 		tag = GET_TAG(bc, page);
 
 		if (TAG_IS_SEALED(tag)) {
@@ -503,11 +503,11 @@ static URET _ScanAndFixUnCleanPage(uffs_Device *dev, uffs_BlockInfo *bc)
 			break;
 		}
 
-		// now we have a clean tag (all 0xFF ?). Need to check mini header to see if it's an unclean page.
-		if (uffs_LoadMiniHeader(dev, bc->block, page, &header) == U_FAIL) {
-			// I/O error ?
-			return U_FAIL;
-		}
+		//		// now we have a clean tag (all 0xFF ?). Need to check mini header to see if it's an unclean page.
+		//		if (uffs_LoadMiniHeader(dev, bc->block, page, &header) == U_FAIL) {
+		//			// I/O error ?
+		//			return U_FAIL;
+		//		}
 
 		if (header.status != 0xFF) {
 			// page data is dirty
@@ -559,6 +559,7 @@ static URET _BuildTreeStepOne(uffs_Device *dev)
 
 	//	printf("s:%d e:%d\n", dev->par.start, dev->par.end);
 	for (block = dev->par.start; block <= dev->par.end; block++) {
+		//CustomLog("Next Block");
 		bc = uffs_BlockInfoGet(dev, block);
 		if (bc == NULL) {
 			uffs_Perror(UFFS_MSG_SERIOUS, "step one:fail to get block info");
@@ -578,51 +579,64 @@ static URET _BuildTreeStepOne(uffs_Device *dev)
 			uffs_TreeInsertToBadBlockList(dev, node);
 			uffs_Perror(UFFS_MSG_NORMAL, "found bad block %d", block);
 		}
-		else if (uffs_IsPageErased(dev, bc, 0) == U_TRUE) {	//@ read one spare: 0
-			// page 0 tag shows it's an erased block, we need to check the mini header status to make sure it is clean.
-			if (uffs_LoadMiniHeader(dev, block, 0, &header) == U_FAIL) {
-				uffs_Perror(UFFS_MSG_SERIOUS,
-							"I/O error when reading mini header !"
-							"block %d page %d",
-							block, 0);
-				ret = U_FAIL;
-				break;
-			}
+		else {
+			//CustomLog("R3");
+			UBOOL r3 = uffs_IsPageErased(dev, bc, 0, &header);
+			//CustomLog("~R3 bc = %u, block = %d", bc->block, block);
+			if (r3 == U_TRUE) {	//@ read one spare: 0
+				// page 0 tag shows it's an erased block, we need to check the mini header status to make sure it is clean.
+				//CustomLog("R1");
+				//UBOOL r1 = uffs_LoadMiniHeader(dev, block, 0, &header);
+				//CustomLog("~R1");
 
-			flash_ret = UFFS_FLASH_NO_ERR;
-			if (header.status != 0xFF) {
-				// page 0 tag is clean but page data is dirty ???
-				// this block should be erased immediately !
-				uffs_Perror(UFFS_MSG_NORMAL,
-							"first page in block %d is unclean, will be erased now!", bc->block);
-				flash_ret = uffs_FlashEraseBlock(dev, block);
-			}
-			node->u.list.block = block;
-			if (UFFS_FLASH_IS_BAD_BLOCK(flash_ret)) {
-				uffs_Perror(UFFS_MSG_NORMAL,
-							"New bad block (%d) discovered.", block);
-				uffs_BadBlockProcessNode(dev, node);
+				//				if (r1 == U_FAIL) {
+				//					uffs_Perror(UFFS_MSG_SERIOUS,
+				//								"I/O error when reading mini header !"
+				//								"block %d page %d",
+				//								block, 0);
+				//					ret = U_FAIL;
+				//					break;
+				//				}
+
+				flash_ret = UFFS_FLASH_NO_ERR;
+				if (header.status != 0xFF) {
+					// page 0 tag is clean but page data is dirty ???
+					// this block should be erased immediately !
+					uffs_Perror(UFFS_MSG_NORMAL,
+								"first page in block %d is unclean, will be erased now!", bc->block);
+					flash_ret = uffs_FlashEraseBlock(dev, block);
+				}
+				node->u.list.block = block;
+				if (UFFS_FLASH_IS_BAD_BLOCK(flash_ret)) {
+					uffs_Perror(UFFS_MSG_NORMAL,
+								"New bad block (%d) discovered.", block);
+					uffs_BadBlockProcessNode(dev, node);
+				}
+				else {
+					// page 0 is clean does not means all pages in this block are clean,
+					// need to check this block later before use it.
+					uffs_TreeInsertToErasedListTailEx(dev, node, 1);
+				}
 			}
 			else {
-				// page 0 is clean does not means all pages in this block are clean,
-				// need to check this block later before use it.
-				uffs_TreeInsertToErasedListTailEx(dev, node, 1);
-			}
-		}
-		else {
-			// make sure it's not a non-recoverable bad block ...
-			if (uffs_TreeProcessPendingBadBlock(dev, node, block) == U_FALSE) {
+				UBOOL r2 = uffs_TreeProcessPendingBadBlock(dev, node, block);
 
-				// this block have valid data page(s).
-				ret = _ScanAndFixUnCleanPage(dev, bc);
-				if (ret == U_FAIL)
-					break;
+				// make sure it's not a non-recoverable bad block ...
+				if (r2 == U_FALSE) {
 
-				// _ScanAndFixUnCleanPage() might add new pending block, we need to process it first.
-				if (uffs_TreeProcessPendingBadBlock(dev, node, block) == U_FALSE) {
-					ret = _BuildValidTreeNode(dev, node, bc, &st);
+					// this block have valid data page(s).
+					//CustomLog("R2");
+					ret = _ScanAndFixUnCleanPage(dev, bc);
+					//CustomLog("~R2");
 					if (ret == U_FAIL)
 						break;
+
+					// _ScanAndFixUnCleanPage() might add new pending block, we need to process it first.
+					if (uffs_TreeProcessPendingBadBlock(dev, node, block) == U_FALSE) {
+						ret = _BuildValidTreeNode(dev, node, bc, &st);
+						if (ret == U_FAIL)
+							break;
+					}
 				}
 			}
 		}

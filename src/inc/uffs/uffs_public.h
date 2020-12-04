@@ -46,18 +46,18 @@
 #include "uffs/uffs_pool.h"
 
 #ifdef __cplusplus
-extern "C"{
+extern "C" {
 #endif
 
 #ifndef ARRAY_SIZE
-# define ARRAY_SIZE(ar) (sizeof(ar) / sizeof(ar[0]))
+#define ARRAY_SIZE(ar) (sizeof(ar) / sizeof(ar[0]))
 #endif
 
 #ifndef offsetof
-# define offsetof(T, x) ((size_t) &((T *)0)->x)
+#define offsetof(T, x) ((size_t) & ((T *)0)->x)
 #endif
 #ifndef container_of
-#define container_of(p, T, x) ((T *)((char *)(p) - offsetof(T,x)))
+#define container_of(p, T, x) ((T *)((char *)(p)-offsetof(T, x)))
 #endif
 
 /** 
@@ -71,11 +71,11 @@ extern "C"{
  * \note Be careful: it's part of the physical format (see: uffs_FileInfoSt.name)
  *    !!DO NOT CHANGE IT AFTER FILE SYSTEM IS FORMATED!!
  */
-#define MAX_FILENAME_LENGTH         128
+#define MAX_FILENAME_LENGTH 128
 
 /** \note 8-bits attr goes to uffs_dirent::d_type */
-#define FILE_ATTR_DIR       (1 << 7)    //!< attribute for directory
-#define FILE_ATTR_WRITE     (1 << 0)    //!< writable
+#define FILE_ATTR_DIR (1 << 7)		//!< attribute for directory
+#define FILE_ATTR_WRITE (1 << 0)	//!< writable
 
 
 /**
@@ -83,13 +83,13 @@ extern "C"{
  * \brief file/dir entry info in physical storage format
  */
 struct uffs_FileInfoSt {
-    u32 attr;               //!< file/dir attribute
-    u32 create_time;
-    u32 last_modify;
-    u32 access;
-    u32 reserved;
-    u32 name_len;           //!< length of file/dir name
-    char name[MAX_FILENAME_LENGTH];
+	u32 attr;	//!< file/dir attribute
+	u32 create_time;
+	u32 last_modify;
+	u32 access;
+	u32 reserved;
+	u32 name_len;	//!< length of file/dir name
+	char name[MAX_FILENAME_LENGTH];
 };
 typedef struct uffs_FileInfoSt uffs_FileInfo;
 
@@ -98,9 +98,9 @@ typedef struct uffs_FileInfoSt uffs_FileInfo;
  * \brief object info
  */
 typedef struct uffs_ObjectInfoSt {
-    uffs_FileInfo info;
-    u32 len;                //!< length of file
-    u16 serial;             //!< object serial num
+	uffs_FileInfo info;
+	u32 len;	   //!< length of file
+	u16 serial;	//!< object serial num
 } uffs_ObjectInfo;
 
 
@@ -110,7 +110,7 @@ typedef struct uffs_ObjectInfoSt {
  * Defaults to 12, which imposes 4 KB limit on page length.
  */
 #ifndef UFFS_TAG_DATA_LEN_BITS
-#    define UFFS_TAG_DATA_LEN_BITS 12
+#define UFFS_TAG_DATA_LEN_BITS 12
 #endif
 
 /**
@@ -119,13 +119,13 @@ typedef struct uffs_ObjectInfoSt {
  *        this defines the maximum pages per block you can have.
  *        e.g. '9' ==> maximum 512 pages per block
  **/
-#define UFFS_TAG_PAGE_ID_SIZE_BITS  6
+#define UFFS_TAG_PAGE_ID_SIZE_BITS 6
 
 #if UFFS_TAG_RESERVED_BITS + UFFS_TAG_DATA_LEN_BITS > 22
 #error "UFFS_TAG_PAGE_ID_SIZE_BITS + UFFS_TAG_DATA_LEN_BITS cannot be bigger than 22 !"
 #endif
 
-#if UFFS_MAX_PAGE_SIZE > (1<<UFFS_TAG_DATA_LEN_BITS)
+#if UFFS_MAX_PAGE_SIZE > (1 << UFFS_TAG_DATA_LEN_BITS)
 #error "UFFS_TAG_DATA_LEN_BITS is too small to support current UFFS_MAX_PAGE_SIZE"
 #endif
 
@@ -140,19 +140,19 @@ typedef struct uffs_ObjectInfoSt {
  * \brief uffs tag, 8 bytes, will be store in page spare area.
  */
 struct uffs_TagStoreSt {
-	u32 dirty:1;		//!< 0: dirty, 1: clear
-	u32 valid:1;		//!< 0: valid, 1: invalid
-	u32 type:2;			//!< block type: #UFFS_TYPE_DIR, #UFFS_TYPE_FILE, #UFFS_TYPE_DATA
-	u32 block_ts:2;		//!< time stamp of block;
-	u32 data_len:UFFS_TAG_DATA_LEN_BITS;	//!< length of page data
-	u32 serial:14;		//!< serial number
+	u32 dirty : 1;							  //!< 0: dirty, 1: clear
+	u32 valid : 1;							  //!< 0: valid, 1: invalid
+	u32 type : 2;							  //!< block type: #UFFS_TYPE_DIR, #UFFS_TYPE_FILE, #UFFS_TYPE_DATA
+	u32 block_ts : 2;						  //!< time stamp of block;
+	u32 data_len : UFFS_TAG_DATA_LEN_BITS;	//!< length of page data
+	u32 serial : 14;						  //!< serial number
 
-	u32 parent:10;		//!< parent's serial number
-	u32 page_id:UFFS_TAG_PAGE_ID_SIZE_BITS;		//!< page id
+	u32 parent : 10;							 //!< parent's serial number
+	u32 page_id : UFFS_TAG_PAGE_ID_SIZE_BITS;	//!< page id
 #if UFFS_TAG_RESERVED_BITS != 0
-	u32 reserved:UFFS_TAG_RESERVED_BITS;		//!< reserved, for UFFS2
+	u32 reserved : UFFS_TAG_RESERVED_BITS;	//!< reserved, for UFFS2
 #endif
-	u32 tag_ecc:12;		//!< tag ECC
+	u32 tag_ecc : 12;	//!< tag ECC
 };
 
 #define TAG_ECC_DEFAULT (0xFFF)	//!< 12-bit '1'
@@ -162,13 +162,13 @@ struct uffs_TagStoreSt {
  * \struct uffs_TagsSt
  */
 struct uffs_TagsSt {
-	struct uffs_TagStoreSt s;		/* store must be the first member */
+	struct uffs_TagStoreSt s; /* store must be the first member */
 
 	/** data_sum for file or dir name */
 	u16 data_sum;
 
 	/** internal used */
-	u8 seal_byte;			//!< seal byte.
+	u8 seal_byte;	//!< seal byte.
 };
 
 /** 
@@ -183,14 +183,14 @@ struct uffs_MiniHeaderSt {
 
 
 /** uffs_TagsSt.dirty */
-#define TAG_VALID		0
-#define TAG_INVALID		1
+#define TAG_VALID 0
+#define TAG_INVALID 1
 
 /** uffs_TagsSt.valid */
-#define TAG_DIRTY		0
-#define TAG_CLEAR		1
+#define TAG_DIRTY 0
+#define TAG_CLEAR 1
 
-#define TAG_IS_DIRTY(tag) (*((u32 *) &((tag)->s)) != 0xFFFFFFFF)	// tag is dirty if first 4 bytes not all 0xFF
+#define TAG_IS_DIRTY(tag) (*((u32 *)&((tag)->s)) != 0xFFFFFFFF)	// tag is dirty if first 4 bytes not all 0xFF
 #define TAG_IS_VALID(tag) ((tag)->s.valid == TAG_VALID)
 #define TAG_IS_SEALED(tag) ((tag)->seal_byte != 0xFF)
 
@@ -214,13 +214,12 @@ UBOOL uffs_IsSrcNewerThanObj(int src, int obj);
 #include "uffs_device.h"
 
 
-
 /********************************** debug & error *************************************/
-#define UFFS_MSG_NOISY		-1
-#define UFFS_MSG_NORMAL		0
-#define UFFS_MSG_SERIOUS	1
-#define UFFS_MSG_DEAD		2
-#define UFFS_MSG_NOMSG		100
+#define UFFS_MSG_NOISY -1
+#define UFFS_MSG_NORMAL 0
+#define UFFS_MSG_SERIOUS 1
+#define UFFS_MSG_DEAD 2
+#define UFFS_MSG_NOMSG 100
 
 #define TENDSTR "\n"
 
@@ -238,22 +237,23 @@ void uffs_PerrorRaw(int level, const char *fmt, ...);
 UBOOL uffs_Assert(UBOOL expr, const char *fmt, ...);
 #else
 
-#define uffs_Perror(level, fmt, ... ) \
-	uffs_DebugMessage(level, PFX, TENDSTR, __LINE__, fmt, ## __VA_ARGS__)
+#define uffs_Perror(level, fmt, ...) \
+	uffs_DebugMessage(level, PFX, TENDSTR, __LINE__, fmt, ##__VA_ARGS__)
 
-#define uffs_PerrorRaw(level, fmt, ... ) \
-	uffs_DebugMessage(level, NULL, NULL, -1, fmt, ## __VA_ARGS__)
+#define uffs_PerrorRaw(level, fmt, ...) \
+	uffs_DebugMessage(level, NULL, NULL, -1, fmt, ##__VA_ARGS__)
 
 #define uffs_Assert(expr, msg, ...) \
-	((expr) ? U_TRUE : (uffs_AssertCall(__FILE__, __LINE__, msg, ## __VA_ARGS__), U_FALSE))
+	((expr) ? U_TRUE : (uffs_AssertCall(__FILE__, __LINE__, msg, ##__VA_ARGS__), U_FALSE))
 
 #endif
 
 #define uffs_Panic() \
 	do { \
 		uffs_AssertCall(__FILE__, __LINE__, "Bam !!\n"); \
-		while(1); \
-	} while(0)
+		while (1) \
+			; \
+	} while (0)
 
 /********************************** NAND **********************************************/
 //NAND flash specific file must implement these interface
@@ -273,27 +273,27 @@ UBOOL uffs_IsBlockBad(uffs_Device *dev, uffs_BlockInfo *bc);
  * \def UFFS_INVALID_PAGE
  * \brief macro for invalid page number
  */
-#define UFFS_INVALID_PAGE	(0xfffe)
+#define UFFS_INVALID_PAGE (0xfffe)
 
 /**
  * \def UFFS_MAX_PAGES_PER_BLOCK
  * \brief maximum allowed pages per block
  **/
-#define UFFS_MAX_PAGES_PER_BLOCK    (1 << UFFS_TAG_PAGE_ID_SIZE_BITS)
+#define UFFS_MAX_PAGES_PER_BLOCK (1 << UFFS_TAG_PAGE_ID_SIZE_BITS)
 
 /** 
  * \def UFFS_INVALID_BLOCK
  * \brief macro for invalid block number
  */
-#define UFFS_INVALID_BLOCK	(0xfffe)
+#define UFFS_INVALID_BLOCK (0xfffe)
 
 
 URET uffs_NewBlock(uffs_Device *dev, u16 block, uffs_Tags *tag, uffs_Buf *buf);
 URET uffs_BlockRecover(uffs_Device *dev, uffs_BlockInfo *old, u16 newBlock);
-URET uffs_PageRecover(uffs_Device *dev, 
-					  uffs_BlockInfo *bc, 
-					  u16 oldPage, 
-					  u16 newPage, 
+URET uffs_PageRecover(uffs_Device *dev,
+					  uffs_BlockInfo *bc,
+					  u16 oldPage,
+					  u16 newPage,
 					  uffs_Buf *buf);
 int uffs_FindFreePageInBlock(uffs_Device *dev, uffs_BlockInfo *bc);
 u16 uffs_FindBestPageInBlock(uffs_Device *dev, uffs_BlockInfo *bc, u16 page);
@@ -305,7 +305,7 @@ u16 uffs_MakeSum16(const void *p, int len);
 URET uffs_CreateNewFile(uffs_Device *dev, u16 parent, u16 serial, uffs_BlockInfo *bc, uffs_FileInfo *fi);
 
 int uffs_GetBlockFileDataLength(uffs_Device *dev, uffs_BlockInfo *bc, u8 type);
-UBOOL uffs_IsPageErased(uffs_Device *dev, uffs_BlockInfo *bc, u16 page);
+UBOOL uffs_IsPageErased(uffs_Device *dev, uffs_BlockInfo *bc, u16 page, struct uffs_MiniHeaderSt *header);
 int uffs_GetFreePagesCount(uffs_Device *dev, uffs_BlockInfo *bc);
 UBOOL uffs_IsDataBlockReguFull(uffs_Device *dev, uffs_BlockInfo *bc);
 UBOOL uffs_IsThisBlockUsed(uffs_Device *dev, uffs_BlockInfo *bc);
@@ -323,7 +323,7 @@ URET uffs_LoadMiniHeader(uffs_Device *dev, int block, u16 page, struct uffs_Mini
 void uffs_FdSignatureIncrease(void);
 URET uffs_DirEntryBufInit(void);
 URET uffs_DirEntryBufRelease(void);
-uffs_Pool * uffs_DirEntryBufGetPool(void);
+uffs_Pool *uffs_DirEntryBufGetPool(void);
 int uffs_DirEntryBufPutAll(uffs_Device *dev);
 
 
@@ -341,4 +341,3 @@ URET uffs_ReleaseFileSystemObjects(void);
 }
 #endif
 #endif	// _UFFS_PUBLIC_H_
-

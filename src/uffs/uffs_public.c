@@ -100,7 +100,7 @@ u16 uffs_FindBestPageInBlock(uffs_Device *dev, uffs_BlockInfo *bc, u16 page)
 	if (!uffs_Assert(page != UFFS_INVALID_PAGE, "invalid param !"))
 		return page;	// just in case ...
 
-	uffs_BlockInfoLoad(dev, bc, page);	// load old page
+	uffs_BlockInfoLoad(dev, bc, page, NULL);	// load old page
 	tag_old = GET_TAG(bc, page);
 
 	if (!uffs_Assert(TAG_IS_GOOD(tag_old), "try to find a invalid page ?"))
@@ -112,7 +112,7 @@ u16 uffs_FindBestPageInBlock(uffs_Device *dev, uffs_BlockInfo *bc, u16 page)
 	// check for fully loaded block, in which case the given
 	// page id is the best page id
 
-	uffs_BlockInfoLoad(dev, bc, lastPage);
+	uffs_BlockInfoLoad(dev, bc, lastPage, NULL);
 	tag = GET_TAG(bc, lastPage);
 
 	if (TAG_IS_GOOD(tag) && TAG_PAGE_ID(tag) == lastPage)
@@ -121,7 +121,7 @@ u16 uffs_FindBestPageInBlock(uffs_Device *dev, uffs_BlockInfo *bc, u16 page)
 	// block not fully loaded, search from bottom to top
 
 	for (i = lastPage; i > page; i--) {
-		uffs_BlockInfoLoad(dev, bc, i);
+		uffs_BlockInfoLoad(dev, bc, i, NULL);
 		tag = GET_TAG(bc, i);
 		if (TAG_IS_GOOD(tag) &&
 			TAG_PAGE_ID(tag) == TAG_PAGE_ID(tag_old) &&
@@ -151,7 +151,7 @@ u16 uffs_FindPageInBlockWithPageId(uffs_Device *dev,
 
 	//Indeed, the page which has page_id, should ahead of page_id ...
 	for (page = page_id; page < dev->attr->pages_per_block; page++) {
-		uffs_BlockInfoLoad(dev, bc, page);
+		uffs_BlockInfoLoad(dev, bc, page, NULL);
 		tag = &(bc->spares[page].tag);
 		if (TAG_IS_GOOD(tag) && TAG_PAGE_ID(tag) == page_id)
 			return page;
@@ -168,7 +168,7 @@ UBOOL uffs_IsBlockPagesFullUsed(uffs_Device *dev, uffs_BlockInfo *bc)
 	uffs_Tags *tag;
 
 	// if the last page is dirty, then the whole block is full
-	uffs_BlockInfoLoad(dev, bc, dev->attr->pages_per_block - 1);
+	uffs_BlockInfoLoad(dev, bc, dev->attr->pages_per_block - 1, NULL);
 	tag = GET_TAG(bc, dev->attr->pages_per_block - 1);
 
 	return TAG_IS_GOOD(tag) ? U_TRUE : U_FALSE;
@@ -186,7 +186,7 @@ UBOOL uffs_IsThisBlockUsed(uffs_Device *dev, uffs_BlockInfo *bc)
 	uffs_Tags *tag;
 
 	// if the first page is dirty, then this block is used.
-	uffs_BlockInfoLoad(dev, bc, 0);
+	uffs_BlockInfoLoad(dev, bc, 0, NULL);
 	tag = GET_TAG(bc, 0);
 
 	return TAG_IS_DIRTY(tag) ? U_TRUE : U_FALSE;
@@ -202,7 +202,7 @@ int uffs_GetBlockTimeStamp(uffs_Device *dev, uffs_BlockInfo *bc)
 	if (uffs_IsThisBlockUsed(dev, bc) == U_FALSE)
 		return uffs_GetFirstBlockTimeStamp();
 	else {
-		uffs_BlockInfoLoad(dev, bc, 0);
+		uffs_BlockInfoLoad(dev, bc, 0, NULL);
 		return TAG_BLOCK_TS(GET_TAG(bc, 0));
 	}
 }
@@ -222,8 +222,8 @@ u16 uffs_FindFirstFreePage(uffs_Device *dev,
 	u16 i;
 
 	for (i = pageFrom; i < dev->attr->pages_per_block; i++) {
-		uffs_BlockInfoLoad(dev, bc, i);
-		if (uffs_IsPageErased(dev, bc, i) == U_TRUE)
+		uffs_BlockInfoLoad(dev, bc, i, NULL);
+		if (uffs_IsPageErased(dev, bc, i, NULL) == U_TRUE)
 			return i;
 	}
 
@@ -270,7 +270,7 @@ URET uffs_CreateNewFile(uffs_Device *dev,
 	uffs_Tags *tag;
 	uffs_Buf *buf;
 
-	uffs_BlockInfoLoad(dev, bc, 0);
+	uffs_BlockInfoLoad(dev, bc, 0, NULL);
 
 	tag = GET_TAG(bc, 0);
 	TAG_PARENT(tag) = parent;
@@ -304,7 +304,7 @@ int uffs_GetBlockFileDataLength(uffs_Device *dev, uffs_BlockInfo *bc, u8 type)
 	u16 page;
 	u16 lastPage = dev->attr->pages_per_block - 1;
 
-	uffs_BlockInfoLoad(dev, bc, lastPage);
+	uffs_BlockInfoLoad(dev, bc, lastPage, NULL);
 	tag = GET_TAG(bc, lastPage);
 
 	if (TAG_IS_GOOD(tag) && TAG_PAGE_ID(tag) == lastPage) {
@@ -322,7 +322,7 @@ int uffs_GetBlockFileDataLength(uffs_Device *dev, uffs_BlockInfo *bc, u8 type)
 
 	// ok, it's not the full loaded file/data block,
 	// need to read all spares....
-	uffs_BlockInfoLoad(dev, bc, UFFS_ALL_PAGES);
+	uffs_BlockInfoLoad(dev, bc, UFFS_ALL_PAGES, NULL);
 	tag = GET_TAG(bc, 0);
 	if (uffs_Assert(TAG_IS_GOOD(tag), "block %d page 0 does not have good tag ?", bc->block)) {
 		if (TAG_TYPE(tag) == UFFS_TYPE_FILE) {
@@ -362,8 +362,8 @@ int uffs_GetFreePagesCount(uffs_Device *dev, uffs_BlockInfo *bc)
 
 	// search from the last page ... to first page
 	for (i = dev->attr->pages_per_block - 1; i >= 0; i--) {
-		uffs_BlockInfoLoad(dev, bc, i);
-		if (uffs_IsPageErased(dev, bc, (u16)i) == U_TRUE) {
+		uffs_BlockInfoLoad(dev, bc, i, NULL);
+		if (uffs_IsPageErased(dev, bc, (u16)i, NULL) == U_TRUE) {
 			count++;
 		}
 		else {
@@ -382,12 +382,12 @@ int uffs_GetFreePagesCount(uffs_Device *dev, uffs_BlockInfo *bc)
  * \retval U_TRUE block is erased, ready to use
  * \retval U_FALSE block is dirty, maybe use by file
  */
-UBOOL uffs_IsPageErased(uffs_Device *dev, uffs_BlockInfo *bc, u16 page)
+UBOOL uffs_IsPageErased(uffs_Device *dev, uffs_BlockInfo *bc, u16 page, struct uffs_MiniHeaderSt *header)
 {
 	uffs_Tags *tag;
 	URET ret;
 
-	ret = uffs_BlockInfoLoad(dev, bc, page);
+	ret = uffs_BlockInfoLoad(dev, bc, page, header);
 	if (ret == U_SUCC) {
 		tag = GET_TAG(bc, page);
 		if (!TAG_IS_SEALED(tag) &&
