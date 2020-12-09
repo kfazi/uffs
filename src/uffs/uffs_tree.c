@@ -269,7 +269,6 @@ TreeNode *uffs_FindFromTree(uffs_Device *dev,
 	return NULL;
 }
 
-
 static URET _BuildValidTreeNode(uffs_Device *dev,
 								TreeNode *node,	//!< empty node
 								uffs_BlockInfo *bc,
@@ -280,9 +279,9 @@ static URET _BuildValidTreeNode(uffs_Device *dev,
 	u16 block, parent, serial, block_alt;
 	uffs_BlockInfo *bc_alt;
 	u8 type;
-	//int page;
+	int page;
 	uffs_Buf *buf = NULL;
-	//uffs_FileInfo *info;
+	uffs_FileInfo *info;
 	u16 data_sum = 0;
 	int ret;
 
@@ -395,41 +394,43 @@ static URET _BuildValidTreeNode(uffs_Device *dev,
 		if (buf == NULL)
 			return U_FAIL;
 		//CustomLog("A2");
-		UBOOL r1 = uffs_BlockInfoLoad(dev, bc, UFFS_ALL_PAGES, NULL);
-		//CustomLog("~A2");
-		if (r1 == U_FAIL) {
-			// load block info failed ? check if it's due to new bad block ...
-			if (uffs_TreeProcessPendingBadBlock(dev, node, block) == U_TRUE) {
-				// this is a bad block, processed.
-				uffs_BufFreeClone(dev, buf);
-				return U_SUCC;
-			}
-			else {
-				// not because of bad block ? refuse to continue.
-				uffs_BufFreeClone(dev, buf);
-				return U_FAIL;
-			}
+		//		UBOOL r1 = uffs_BlockInfoLoad(dev, bc, UFFS_ALL_PAGES, NULL);
+		//		//CustomLog("~A2");
+		//		if (r1 == U_FAIL) {
+		//			// load block info failed ? check if it's due to new bad block ...
+		//			if (uffs_TreeProcessPendingBadBlock(dev, node, block) == U_TRUE) {
+		//				// this is a bad block, processed.
+		//				uffs_BufFreeClone(dev, buf);
+		//				return U_SUCC;
+		//			}
+		//			else {
+		//				// not because of bad block ? refuse to continue.
+		//				uffs_BufFreeClone(dev, buf);
+		//				return U_FAIL;
+		//			}
+		//		}
+		//CustomLog("A3");
+		page = uffs_FindPageInBlockWithPageId(dev, bc, 0);
+		if (page == UFFS_INVALID_PAGE) {
+			uffs_BufFreeClone(dev, buf);
+			uffs_Perror(UFFS_MSG_SERIOUS,
+						"Can't find any valid page for page_id=0 ? invalid block !"
+						"this might be caused by the tag layout change.\n");
+			goto process_invalid_block;
 		}
-		//		page = uffs_FindPageInBlockWithPageId(dev, bc, 0);
-		//		if (page == UFFS_INVALID_PAGE) {
-		//			uffs_BufFreeClone(dev, buf);
-		//			uffs_Perror(UFFS_MSG_SERIOUS,
-		//						"Can't find any valid page for page_id=0 ? invalid block !"
-		//						"this might be caused by the tag layout change.\n");
-		//			goto process_invalid_block;
-		//		}
-		//		page = uffs_FindBestPageInBlock(dev, bc, page);
-		//		ret = uffs_FlashReadPage(dev, block, page, buf, U_FALSE);
-		//
-		//		if (uffs_BadBlockAddByFlashResult(dev, block, ret) == UFFS_PENDING_BLK_NONE && UFFS_FLASH_HAVE_ERR(ret)) {
-		//			uffs_Perror(UFFS_MSG_SERIOUS, "I/O error ?");
-		//			uffs_BufFreeClone(dev, buf);
-		//			return U_FAIL;
-		//		}
-		//
-		//		info = (uffs_FileInfo *)(buf->data);
-		data_sum = 5;	//uffs_MakeSum16(info->name, info->name_len);
+		page = uffs_FindBestPageInBlock(dev, bc, page);
+		ret = uffs_FlashReadPage(dev, block, page, buf, U_FALSE);
+
+		if (uffs_BadBlockAddByFlashResult(dev, block, ret) == UFFS_PENDING_BLK_NONE && UFFS_FLASH_HAVE_ERR(ret)) {
+			uffs_Perror(UFFS_MSG_SERIOUS, "I/O error ?");
+			uffs_BufFreeClone(dev, buf);
+			return U_FAIL;
+		}
+
+		info = (uffs_FileInfo *)(buf->data);
+		data_sum = uffs_MakeSum16(info->name, info->name_len);
 		uffs_BufFreeClone(dev, buf);
+		//CustomLog("~A3");
 	}
 
 	switch (type) {

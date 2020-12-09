@@ -322,7 +322,7 @@ int uffs_GetBlockFileDataLength(uffs_Device *dev, uffs_BlockInfo *bc, u8 type)
 
 	// ok, it's not the full loaded file/data block,
 	// need to read all spares....
-	uffs_BlockInfoLoad(dev, bc, UFFS_ALL_PAGES, NULL);
+	uffs_BlockInfoLoad(dev, bc, 0, NULL);
 	tag = GET_TAG(bc, 0);
 	if (uffs_Assert(TAG_IS_GOOD(tag), "block %d page 0 does not have good tag ?", bc->block)) {
 		if (TAG_TYPE(tag) == UFFS_TYPE_FILE) {
@@ -334,6 +334,7 @@ int uffs_GetBlockFileDataLength(uffs_Device *dev, uffs_BlockInfo *bc, u8 type)
 			i = 0;			//in normal file data block, search from page 0
 		}
 		for (; i < dev->attr->pages_per_block; i++) {
+			uffs_BlockInfoLoad(dev, bc, i, NULL);
 			tag = GET_TAG(bc, i);
 			if (TAG_IS_GOOD(tag)) {
 				if (page_id == TAG_PAGE_ID(tag)) {
