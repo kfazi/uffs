@@ -280,9 +280,9 @@ static URET _BuildValidTreeNode(uffs_Device *dev,
 	u16 block, parent, serial, block_alt;
 	uffs_BlockInfo *bc_alt;
 	u8 type;
-	int page;
+	//int page;
 	uffs_Buf *buf = NULL;
-	uffs_FileInfo *info;
+	//uffs_FileInfo *info;
 	u16 data_sum = 0;
 	int ret;
 
