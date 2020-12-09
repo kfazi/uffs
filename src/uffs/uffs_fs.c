@@ -43,35 +43,35 @@
 #include "uffs/uffs_os.h"
 #include "uffs/uffs_mtb.h"
 #include "uffs/uffs_utils.h"
-#include <string.h> 
+#include <string.h>
 #include <stdio.h>
 
 #define PFX "fs  : "
 
 #define GET_OBJ_NODE_SERIAL(obj) \
 	( \
-		(obj)->type == UFFS_TYPE_DIR ? \
-			(obj)->node->u.dir.serial :	(obj)->node->u.file.serial \
-	 )
+	  (obj)->type == UFFS_TYPE_DIR ? \
+		(obj)->node->u.dir.serial : \
+		(obj)->node->u.file.serial)
 
 #define GET_OBJ_NODE_FATHER(obj) \
 	( \
-		(obj)->type == UFFS_TYPE_DIR ? \
-			(obj)->node->u.dir.parent :	(obj)->node->u.file.parent \
-	 )
+	  (obj)->type == UFFS_TYPE_DIR ? \
+		(obj)->node->u.dir.parent : \
+		(obj)->node->u.file.parent)
 
 #define GET_SERIAL_FROM_OBJECT(obj) \
-			((obj)->node ? GET_OBJ_NODE_SERIAL(obj) : obj->serial)
+	((obj)->node ? GET_OBJ_NODE_SERIAL(obj) : obj->serial)
 
 #define GET_FATHER_FROM_OBJECT(obj) \
-			((obj)->node ? GET_OBJ_NODE_FATHER(obj) : obj->parent)
+	((obj)->node ? GET_OBJ_NODE_FATHER(obj) : obj->parent)
 
 
 #define GET_BLOCK_FROM_NODE(obj) \
 	( \
-		(obj)->type == UFFS_TYPE_DIR ? \
-			(obj)->node->u.dir.block : (obj)->node->u.file.block \
-	 )
+	  (obj)->type == UFFS_TYPE_DIR ? \
+		(obj)->node->u.dir.block : \
+		(obj)->node->u.file.block)
 
 typedef enum {
 	eDRY_RUN = 0,
@@ -88,7 +88,7 @@ static int _object_data[(sizeof(struct uffs_ObjectSt) * MAX_OBJECT_HANDLE) / siz
 static uffs_Pool _object_pool;
 
 
-uffs_Pool * uffs_GetObjectPool(void)
+uffs_Pool *uffs_GetObjectPool(void)
 {
 	return &_object_pool;
 }
@@ -99,7 +99,7 @@ uffs_Pool * uffs_GetObjectPool(void)
 URET uffs_InitObjectBuf(void)
 {
 	return uffs_PoolInit(&_object_pool, _object_data, sizeof(_object_data),
-			sizeof(uffs_Object), MAX_OBJECT_HANDLE, U_FALSE);
+						 sizeof(uffs_Object), MAX_OBJECT_HANDLE, U_FALSE);
 }
 
 /**
@@ -117,9 +117,8 @@ int uffs_GetFreeObjectHandlers(void)
 {
 	int count = 0;
 
-	if(uffs_GlobalFsLockLock() == UEUNINITIALIZED)
-	{
-		return -1;	
+	if (uffs_GlobalFsLockLock() == UEUNINITIALIZED) {
+		return -1;
 	}
 	count = uffs_PoolGetFreeCount(&_object_pool);
 	uffs_GlobalFsLockUnlock();
@@ -133,10 +132,10 @@ int uffs_GetFreeObjectHandlers(void)
 int uffs_PutAllObjectBuf(uffs_Device *dev)
 {
 	int count = 0;
-	uffs_Object * obj = NULL;
+	uffs_Object *obj = NULL;
 
 	do {
-		obj = (uffs_Object *) uffs_PoolFindNextAllocated(&_object_pool, (void *)obj);
+		obj = (uffs_Object *)uffs_PoolFindNextAllocated(&_object_pool, (void *)obj);
 		if (obj && obj->dev && obj->dev->dev_num == dev->dev_num) {
 			uffs_PutObject(obj);
 			count++;
@@ -150,11 +149,11 @@ int uffs_PutAllObjectBuf(uffs_Device *dev)
  * alloc a new object structure
  * \return the new object
  */
-uffs_Object * uffs_GetObject(void)
+uffs_Object *uffs_GetObject(void)
 {
-	uffs_Object * obj;
+	uffs_Object *obj;
 
-	obj = (uffs_Object *) uffs_PoolGet(&_object_pool);
+	obj = (uffs_Object *)uffs_PoolGet(&_object_pool);
 	if (obj) {
 		memset(obj, 0, sizeof(uffs_Object));
 		obj->attr_loaded = U_FALSE;
@@ -181,7 +180,7 @@ URET uffs_ReInitObject(uffs_Object *obj)
 	obj->attr_loaded = U_FALSE;
 	obj->open_succ = U_FALSE;
 
-	return U_SUCC;	
+	return U_SUCC;
 }
 
 /**
@@ -204,9 +203,9 @@ int uffs_GetObjectIndex(uffs_Object *obj)
 /**
  * \return the object by the internal index
  */
-uffs_Object * uffs_GetObjectByIndex(int idx)
+uffs_Object *uffs_GetObjectByIndex(int idx)
 {
-	return (uffs_Object *) uffs_PoolGetBufByIndex(&_object_pool, idx);
+	return (uffs_Object *)uffs_PoolGetBufByIndex(&_object_pool, idx);
 }
 
 #ifdef CONFIG_USE_PER_DEVICE_LOCK
@@ -228,13 +227,16 @@ static void uffs_ObjectDevUnLock(uffs_Object *obj)
 			uffs_DeviceUnLock(obj->dev);
 		}
 	}
-} 
+}
 #else
-#define uffs_ObjectDevLock(obj) do { } while (0)
-#define uffs_ObjectDevUnLock(obj) do { } while (0)
+#define uffs_ObjectDevLock(obj) \
+	do { \
+	} while (0)
+#define uffs_ObjectDevUnLock(obj) \
+	do { \
+	} while (0)
 
 #endif
-
 
 
 /**
@@ -248,7 +250,7 @@ URET uffs_CreateObject(uffs_Object *obj, const char *fullname, int oflag)
 
 	if (uffs_ParseObject(obj, fullname) == U_SUCC)
 		uffs_CreateObjectEx(obj, obj->dev, obj->parent,
-								obj->name, obj->name_len, oflag);
+							obj->name, obj->name_len, oflag);
 
 	if (obj->err == UENOERR) {
 		ret = U_SUCC;
@@ -265,7 +267,6 @@ URET uffs_CreateObject(uffs_Object *obj, const char *fullname, int oflag)
 }
 
 
-
 /**
  * return the dir length from a path.
  * for example, path = "abc/def/xyz", return 8 ("abc/def/")
@@ -276,11 +277,11 @@ static int GetDirLengthFromPath(const char *path, int path_len)
 
 	if (path_len > 0) {
 		if (path[path_len - 1] == '/')
-			path_len--;		// skip the last '/'
+			path_len--;	// skip the last '/'
 
 		p = path + path_len - 1;
 		while (p > path && *p != '/')
-			p--; 
+			p--;
 	}
 
 	return p - path;
@@ -298,8 +299,8 @@ static int GetDirLengthFromPath(const char *path, int path_len)
  *
  * \return U_SUCC or U_FAIL (error code in obj->err).
  */
-URET uffs_CreateObjectEx(uffs_Object *obj, uffs_Device *dev, 
-						   int dir, const char *name, int name_len, int oflag)
+URET uffs_CreateObjectEx(uffs_Object *obj, uffs_Device *dev,
+						 int dir, const char *name, int name_len, int oflag)
 {
 	uffs_Buf *buf = NULL;
 	uffs_FileInfo fi;
@@ -312,7 +313,7 @@ URET uffs_CreateObjectEx(uffs_Object *obj, uffs_Device *dev,
 	obj->name_len = name_len;
 
 	if (obj->type == UFFS_TYPE_DIR) {
-		if (name[obj->name_len - 1] == '/')		// get rid of ending '/' for dir
+		if (name[obj->name_len - 1] == '/')	// get rid of ending '/' for dir
 			obj->name_len--;
 	}
 	else {
@@ -334,26 +335,26 @@ URET uffs_CreateObjectEx(uffs_Object *obj, uffs_Device *dev,
 	if (obj->type == UFFS_TYPE_DIR) {
 		//find out whether have file with the same name
 		node = uffs_TreeFindFileNodeByName(obj->dev, obj->name,
-											obj->name_len, obj->sum,
-											obj->parent);
+										   obj->name_len, obj->sum,
+										   obj->parent);
 		if (node != NULL) {
 			obj->err = UEEXIST;	// we can't create a dir has the
-								// same name with exist file.
+								   // same name with exist file.
 			goto ext_1;
 		}
 		obj->node = uffs_TreeFindDirNodeByName(obj->dev, obj->name,
-												obj->name_len, obj->sum,
-												obj->parent);
+											   obj->name_len, obj->sum,
+											   obj->parent);
 		if (obj->node != NULL) {
-			obj->err = UEEXIST; // we can't create a dir already exist.
+			obj->err = UEEXIST;	// we can't create a dir already exist.
 			goto ext_1;
 		}
 	}
 	else {
 		//find out whether have dir with the same name
 		node = uffs_TreeFindDirNodeByName(obj->dev, obj->name,
-											obj->name_len, obj->sum,
-											obj->parent);
+										  obj->name_len, obj->sum,
+										  obj->parent);
 		if (node != NULL) {
 			obj->err = UEEXIST;
 			goto ext_1;
@@ -364,8 +365,8 @@ URET uffs_CreateObjectEx(uffs_Object *obj, uffs_Device *dev,
 		if (obj->node) {
 			/* file already exist, truncate it to zero length */
 			obj->serial = GET_OBJ_NODE_SERIAL(obj);
-			obj->open_succ = U_TRUE; // set open_succ to U_TRUE before
-									 // call do_TruncateObject()
+			obj->open_succ = U_TRUE;	// set open_succ to U_TRUE before
+										// call do_TruncateObject()
 			if (do_TruncateObject(obj, 0, eDRY_RUN) == U_SUCC)
 				do_TruncateObject(obj, 0, eREAL_RUN);
 			goto ext_1;
@@ -390,7 +391,7 @@ URET uffs_CreateObjectEx(uffs_Object *obj, uffs_Device *dev,
 	buf = uffs_BufNew(obj->dev, obj->type, obj->parent, obj->serial, 0);
 	if (buf == NULL) {
 		uffs_Perror(UFFS_MSG_SERIOUS,
-						"Can't create new buffer when create obj!");
+					"Can't create new buffer when create obj!");
 		goto ext_1;
 	}
 
@@ -453,7 +454,7 @@ ext:
  *
  * \return U_SUCC or U_FAIL (error code in obj->err).
  */
-URET uffs_OpenObjectEx(uffs_Object *obj, uffs_Device *dev, 
+URET uffs_OpenObjectEx(uffs_Object *obj, uffs_Device *dev,
 					   int dir, const char *name, int name_len, int oflag)
 {
 
@@ -514,8 +515,8 @@ URET uffs_OpenObjectEx(uffs_Object *obj, uffs_Device *dev,
 
 	if (obj->type == UFFS_TYPE_DIR) {
 		obj->node = uffs_TreeFindDirNodeByName(obj->dev, obj->name,
-												obj->name_len, obj->sum,
-												obj->parent);
+											   obj->name_len, obj->sum,
+											   obj->parent);
 	}
 	else {
 		obj->node = uffs_TreeFindFileNodeByName(obj->dev, obj->name,
@@ -523,7 +524,7 @@ URET uffs_OpenObjectEx(uffs_Object *obj, uffs_Device *dev,
 												obj->parent);
 	}
 
-	if (obj->node == NULL) {			// dir or file not exist
+	if (obj->node == NULL) {			 // dir or file not exist
 		if (obj->oflag & UO_CREATE) {	// expect to create a new one
 			uffs_ObjectDevUnLock(obj);
 			if (obj->name == NULL || obj->name_len == 0)
@@ -538,7 +539,7 @@ URET uffs_OpenObjectEx(uffs_Object *obj, uffs_Device *dev,
 		}
 	}
 
-	if ((obj->oflag & (UO_CREATE | UO_EXCL)) == (UO_CREATE | UO_EXCL)){
+	if ((obj->oflag & (UO_CREATE | UO_EXCL)) == (UO_CREATE | UO_EXCL)) {
 		obj->err = UEEXIST;
 		goto ext_1;
 	}
@@ -597,7 +598,7 @@ URET uffs_OpenObjectBySerial(uffs_Object *obj, uffs_Device *dev, int serial, int
 	obj->sum = 0;
 	obj->head_pages = obj->dev->attr->pages_per_block - 1;
 
-	if(serial == ROOT_DIR_SERIAL) {
+	if (serial == ROOT_DIR_SERIAL) {
 		obj->serial = ROOT_DIR_SERIAL;
 		goto ext;
 	}
@@ -611,7 +612,7 @@ URET uffs_OpenObjectBySerial(uffs_Object *obj, uffs_Device *dev, int serial, int
 		obj->node = uffs_TreeFindFileNode(obj->dev, serial);
 	}
 
-	if (obj->node == NULL) {			// dir or file not exist
+	if (obj->node == NULL) {	// dir or file not exist
 		obj->err = UENOENT;
 		goto ext_1;
 	}
@@ -688,7 +689,7 @@ URET uffs_ParseObject(uffs_Object *obj, const char *name)
 				}
 				else {
 					dir = node->u.dir.serial;
-					p++; // skip the '/'
+					p++;	// skip the '/'
 					dname = p;
 				}
 			}
@@ -743,12 +744,12 @@ URET uffs_OpenObject(uffs_Object *obj, const char *name, int oflag)
 	if (obj == NULL)
 		return U_FAIL;
 
- 	if ((ret = uffs_ParseObject(obj, name)) == U_SUCC) {
+	if ((ret = uffs_ParseObject(obj, name)) == U_SUCC) {
 		ret = uffs_OpenObjectEx(obj, obj->dev, obj->parent,
-									obj->name, obj->name_len, oflag);
- 	}
- 	if (ret != U_SUCC)
- 		do_ReleaseObjectResource(obj);
+								obj->name, obj->name_len, oflag);
+	}
+	if (ret != U_SUCC)
+		do_ReleaseObjectResource(obj);
 
 	return ret;
 }
@@ -764,12 +765,12 @@ static URET do_FlushObject(uffs_Object *obj)
 		node = obj->node;
 		if (obj->type == UFFS_TYPE_DIR)
 			ret = uffs_BufFlushGroup(dev, obj->node->u.dir.parent,
-										obj->node->u.dir.serial);
+									 obj->node->u.dir.serial);
 		else {
-			ret = (
-				uffs_BufFlushGroupMatchParent(dev, obj->node->u.file.serial) == U_SUCC &&
-				uffs_BufFlushGroup(dev, obj->node->u.file.parent, obj->node->u.file.serial) == U_SUCC
-				) ? U_SUCC : U_FAIL;
+			ret = (uffs_BufFlushGroupMatchParent(dev, obj->node->u.file.serial) == U_SUCC &&
+				   uffs_BufFlushGroup(dev, obj->node->u.file.parent, obj->node->u.file.serial) == U_SUCC) ?
+			  U_SUCC :
+			  U_FAIL;
 		}
 		uffs_Assert(node == obj->node, "obj->node change!\n");
 	}
@@ -785,7 +786,7 @@ static URET do_FlushObject(uffs_Object *obj)
  */
 URET uffs_FlushObject(uffs_Object *obj)
 {
-	if(obj->dev == NULL || obj->open_succ != U_TRUE) {
+	if (obj->dev == NULL || obj->open_succ != U_TRUE) {
 		obj->err = UEBADF;
 		goto ext;
 	}
@@ -815,7 +816,7 @@ URET uffs_CloseObject(uffs_Object *obj)
 	uffs_FileInfo fi;
 #endif
 
-	if(obj->dev == NULL || obj->open_succ != U_TRUE) {
+	if (obj->dev == NULL || obj->open_succ != U_TRUE) {
 		obj->err = UEBADF;
 		goto ext;
 	}
@@ -823,10 +824,10 @@ URET uffs_CloseObject(uffs_Object *obj)
 
 	uffs_ObjectDevLock(obj);
 
-	if (obj->oflag & (UO_WRONLY|UO_RDWR|UO_APPEND|UO_CREATE|UO_TRUNC)) {
+	if (obj->oflag & (UO_WRONLY | UO_RDWR | UO_APPEND | UO_CREATE | UO_TRUNC)) {
 
 #ifdef CONFIG_CHANGE_MODIFY_TIME
-        dev = obj->dev;
+		dev = obj->dev;
 		if (obj->node) {
 			//need to change the last modify time stamp
 			if (obj->type == UFFS_TYPE_DIR)
@@ -834,7 +835,7 @@ URET uffs_CloseObject(uffs_Object *obj)
 			else
 				buf = uffs_BufGetEx(dev, UFFS_TYPE_FILE, obj->node, 0, obj->oflag);
 
-			if(buf == NULL) {
+			if (buf == NULL) {
 				uffs_Perror(UFFS_MSG_SERIOUS, "can't get file header");
 				do_FlushObject(obj);
 				uffs_ObjectDevUnLock(obj);
@@ -878,16 +879,15 @@ static u32 GetStartOfDataBlock(uffs_Object *obj, u16 fdn)
 	}
 	else {
 		return (obj->head_pages * obj->dev->com.pg_data_size) +
-					(fdn - 1) * (obj->dev->com.pg_data_size	*
-						obj->dev->attr->pages_per_block);
+		  (fdn - 1) * (obj->dev->com.pg_data_size * obj->dev->attr->pages_per_block);
 	}
 }
 
 
 static int do_WriteNewBlock(uffs_Object *obj,
-						  const void *data, u32 len,
-						  u16 parent,
-						  u16 serial)
+							const void *data, u32 len,
+							u16 parent,
+							u16 serial)
 {
 	uffs_Device *dev = obj->dev;
 	u16 page_id;
@@ -898,7 +898,8 @@ static int do_WriteNewBlock(uffs_Object *obj,
 
 	for (page_id = 0; page_id < dev->attr->pages_per_block; page_id++) {
 		size = (len - wroteSize) > dev->com.pg_data_size ?
-					dev->com.pg_data_size : len - wroteSize;
+		  dev->com.pg_data_size :
+		  len - wroteSize;
 		if (size <= 0)
 			break;
 
@@ -923,11 +924,11 @@ static int do_WriteNewBlock(uffs_Object *obj,
 }
 
 static int do_WriteInternalBlock(uffs_Object *obj,
-							   TreeNode *node,
-							   u16 fdn,
-							   const void *data,
-							   u32 len,
-							   u32 blockOfs)
+								 TreeNode *node,
+								 u16 fdn,
+								 const void *data,
+								 u32 len,
+								 u32 blockOfs)
 {
 	uffs_Device *dev = obj->dev;
 	u16 maxPageID;
@@ -963,20 +964,21 @@ static int do_WriteInternalBlock(uffs_Object *obj,
 	while (wroteSize < len) {
 		page_id = blockOfs / dev->com.pg_data_size;
 		if (fdn == 0)
-			page_id++; //in file header, page_id start from 1, not 0.
-		if (page_id > maxPageID) 
+			page_id++;	//in file header, page_id start from 1, not 0.
+		if (page_id > maxPageID)
 			break;
 
 		pageOfs = blockOfs % dev->com.pg_data_size;
 		size = (len - wroteSize + pageOfs) > dev->com.pg_data_size ?
-					(dev->com.pg_data_size - pageOfs) : (len - wroteSize);
+		  (dev->com.pg_data_size - pageOfs) :
+		  (len - wroteSize);
 
 		if ((obj->node->u.file.len % dev->com.pg_data_size) == 0 &&
 			(blockOfs + block_start) == obj->node->u.file.len) {
 
 			buf = uffs_BufNew(dev, type, parent, serial, page_id);
 
-			if(buf == NULL) {
+			if (buf == NULL) {
 				uffs_Perror(UFFS_MSG_SERIOUS, "can create a new buf!");
 				break;
 			}
@@ -1004,7 +1006,6 @@ static int do_WriteInternalBlock(uffs_Object *obj,
 
 		if (block_start + blockOfs > obj->node->u.file.len)
 			obj->node->u.file.len = block_start + blockOfs;
-
 	}
 
 	return wroteSize;
@@ -1040,7 +1041,7 @@ static int do_WriteObject(uffs_Object *obj, const void *data, int len)
 				break;
 			}
 			size = do_WriteNewBlock(obj, data ? (u8 *)data + len - remain : NULL,
-										remain, fnode->u.file.serial, fdn);
+									remain, fnode->u.file.serial, fdn);
 
 			//
 			// Flush the new block buffers immediately, so that the new data node will be
@@ -1058,26 +1059,26 @@ static int do_WriteObject(uffs_Object *obj, const void *data, int len)
 			// Now flush the new block.
 			uffs_BufFlushGroup(dev, fnode->u.file.serial, fdn);
 
-			if (size == 0) 
+			if (size == 0)
 				break;
 
 			remain -= size;
 		}
 		else {
 
-			if(fdn == 0)
+			if (fdn == 0)
 				dnode = obj->node;
 			else
 				dnode = uffs_TreeFindDataNode(dev, fnode->u.file.serial, fdn);
 
-			if(dnode == NULL) {
+			if (dnode == NULL) {
 				uffs_Perror(UFFS_MSG_SERIOUS, "can't find data node in tree ?");
 				obj->err = UEUNKNOWN_ERR;
 				break;
 			}
 			size = do_WriteInternalBlock(obj, dnode, fdn,
-									data ? (u8 *)data + len - remain : NULL, remain,
-									write_start - GetStartOfDataBlock(obj, fdn));
+										 data ? (u8 *)data + len - remain : NULL, remain,
+										 write_start - GetStartOfDataBlock(obj, fdn));
 #ifdef CONFIG_FLUSH_BUF_AFTER_WRITE
 			if (fdn == 0)
 				uffs_BufFlushGroup(dev, fnode->u.file.parent, fnode->u.file.serial);
@@ -1114,7 +1115,7 @@ int uffs_WriteObject(uffs_Object *obj, const void *data, int len)
 	u32 pos;
 	int wrote = 0;
 
-	if (obj == NULL) 
+	if (obj == NULL)
 		return 0;
 
 	if (obj->dev == NULL || obj->open_succ != U_TRUE) {
@@ -1129,7 +1130,7 @@ int uffs_WriteObject(uffs_Object *obj, const void *data, int len)
 	}
 
 	if (obj->oflag == UO_RDONLY) {
-		obj->err = UEACCES;  // can't write to 'read only' mode opened file
+		obj->err = UEACCES;	// can't write to 'read only' mode opened file
 		return 0;
 	}
 
@@ -1142,9 +1143,9 @@ int uffs_WriteObject(uffs_Object *obj, const void *data, int len)
 	else {
 		if (obj->pos > fnode->u.file.len) {
 			// current pos pass over the end of file, need to fill the gap with '\0'
-			pos = obj->pos;	// save desired pos
-			obj->pos = fnode->u.file.len; // filling gap from the end of the file.
-			remain = do_WriteObject(obj, NULL, pos - fnode->u.file.len);  // Write filling bytes. Note: the filling data does not count as 'wrote' in this write operation.
+			pos = obj->pos;													// save desired pos
+			obj->pos = fnode->u.file.len;									// filling gap from the end of the file.
+			remain = do_WriteObject(obj, NULL, pos - fnode->u.file.len);	// Write filling bytes. Note: the filling data does not count as 'wrote' in this write operation.
 			obj->pos = pos - remain;
 			if (remain > 0)	// fail to fill the gap ? stop.
 				goto ext;
@@ -1207,7 +1208,7 @@ int uffs_ReadObject(uffs_Object *obj, void *data, int len)
 	}
 
 	if (obj->pos > fnode->u.file.len) {
-		return 0; //can't read file out of range
+		return 0;	//can't read file out of range
 	}
 
 	if (obj->oflag & UO_WRONLY) {
@@ -1274,7 +1275,7 @@ int uffs_ReadObject(uffs_Object *obj, void *data, int len)
 
 	obj->pos += (len - remain);
 
-	if (HAVE_BADBLOCK(dev)) 
+	if (HAVE_BADBLOCK(dev))
 		uffs_BadBlockRecover(dev);
 
 	uffs_ObjectDevUnLock(obj);
@@ -1304,30 +1305,30 @@ long uffs_SeekObject(uffs_Object *obj, long offset, int origin)
 	else {
 		uffs_ObjectDevLock(obj);
 		switch (origin) {
-			case USEEK_CUR:
-				if ((long)obj->pos + offset < 0) {
-					obj->err = UEINVAL;
-				}
-				else {
-					obj->pos += offset;
-				}
-				break;
-			case USEEK_SET:
-				if (offset < 0) {
-					obj->err = UEINVAL;
-				}
-				else {
-					obj->pos = offset;
-				}
-				break;
-			case USEEK_END:
-				if ((long)obj->node->u.file.len + offset < 0) {
-					obj->err = UEINVAL;
-				}
-				else {
-					obj->pos = obj->node->u.file.len + offset;
-				}
-				break;
+		case USEEK_CUR:
+			if ((long)obj->pos + offset < 0) {
+				obj->err = UEINVAL;
+			}
+			else {
+				obj->pos += offset;
+			}
+			break;
+		case USEEK_SET:
+			if (offset < 0) {
+				obj->err = UEINVAL;
+			}
+			else {
+				obj->pos = offset;
+			}
+			break;
+		case USEEK_END:
+			if ((long)obj->node->u.file.len + offset < 0) {
+				obj->err = UEINVAL;
+			}
+			else {
+				obj->pos = obj->node->u.file.len + offset;
+			}
+			break;
 		}
 		uffs_ObjectDevUnLock(obj);
 	}
@@ -1416,8 +1417,8 @@ static URET do_TruncateInternalWithBlockRecover(uffs_Object *obj,
 		type = UFFS_TYPE_DATA;
 		max_page_id = dev->attr->pages_per_block - 1;
 		block_start = obj->head_pages * dev->com.pg_data_size +
-						(fdn - 1) * dev->com.pg_data_size *
-						dev->attr->pages_per_block;
+		  (fdn - 1) * dev->com.pg_data_size *
+			dev->attr->pages_per_block;
 		parent = node->u.data.parent;
 		serial = node->u.data.serial;
 	}
@@ -1431,14 +1432,14 @@ static URET do_TruncateInternalWithBlockRecover(uffs_Object *obj,
 				if (uffs_BufIsFree(buf) == U_FALSE) {
 					obj->err = UEEXIST;
 					break;	//!< and someone is still holding the buffer,
-							//   can't truncate it !!!
+							  //   can't truncate it !!!
 				}
 			}
 		}
 		buf = NULL;
 		goto ext;
 	}
-	
+
 	// find the last page *after* truncate
 	block_offset = remain - block_start;
 	page_id = block_offset / dev->com.pg_data_size;
@@ -1461,13 +1462,13 @@ static URET do_TruncateInternalWithBlockRecover(uffs_Object *obj,
 		goto ext;
 	}
 
-	uffs_BufWrite(dev, buf, NULL, 0, 0); // just make this buf dirty
+	uffs_BufWrite(dev, buf, NULL, 0, 0);	// just make this buf dirty
 
 	// lock the group
 	slot = uffs_BufFindGroupSlot(dev, parent, serial);
 	uffs_BufLockGroup(dev, slot);
 
-	if (remain == 0) // remain == 0: means discard all data in this block.
+	if (remain == 0)	// remain == 0: means discard all data in this block.
 		buf->data_len = 0;
 	else {
 		remain = (remain % dev->com.pg_data_size);
@@ -1541,7 +1542,7 @@ static URET do_TruncateObject(uffs_Object *obj, u32 remain, RunOptionE run_opt)
 	u16 page;
 	int pos;
 
-	pos = obj->pos;   // save current file position
+	pos = obj->pos;	// save current file position
 
 	if (obj->dev == NULL || obj->open_succ == U_FALSE || fnode == NULL) {
 		obj->err = UEBADF;
@@ -1560,11 +1561,11 @@ static URET do_TruncateObject(uffs_Object *obj, u32 remain, RunOptionE run_opt)
 	if (flen < remain) {
 		// file is shorter than 'reamin', fill the gap with '\0'
 		if (run_opt == eREAL_RUN) {
-			obj->pos = flen;  // move file pointer to the end
+			obj->pos = flen;									   // move file pointer to the end
 			if (do_WriteObject(obj, NULL, remain - flen) > 0) {	// fill '\0' ...
 				uffs_Perror(UFFS_MSG_SERIOUS, "Write object not finished. expect %d but only %d wrote.",
-												remain - flen, fnode->u.file.len - flen);
-				obj->err = UEIOERR;   // likely be an I/O error.
+							remain - flen, fnode->u.file.len - flen);
+				obj->err = UEIOERR;	// likely be an I/O error.
 			}
 			flen = obj->node->u.file.len;
 		}
@@ -1599,7 +1600,7 @@ static URET do_TruncateObject(uffs_Object *obj, u32 remain, RunOptionE run_opt)
 						if (uffs_BufIsFree(buf) == U_FALSE) {
 							uffs_BlockInfoPut(dev, bc);
 							goto ext;	//!< and someone is still holding the buffer,
-										//   can't truncate it !!!
+										 //   can't truncate it !!!
 						}
 						else if (run_opt == eREAL_RUN)
 							uffs_BufMarkEmpty(dev, buf);	//!< discard the buffer
@@ -1630,15 +1631,14 @@ static URET do_TruncateObject(uffs_Object *obj, u32 remain, RunOptionE run_opt)
 		}
 	}
 
-	if (HAVE_BADBLOCK(dev)) 
+	if (HAVE_BADBLOCK(dev))
 		uffs_BadBlockRecover(dev);
 ext:
-	obj->pos = pos;  // keep file pointer offset not changed.
+	obj->pos = pos;	// keep file pointer offset not changed.
 
 	uffs_Assert(fnode == obj->node, "obj->node change!\n");
 
 	return (obj->err == UENOERR ? U_SUCC : U_FAIL);
-
 }
 
 /**
@@ -1658,12 +1658,11 @@ int _CheckObjBufRef(uffs_Object *obj)
 	// check the DIR or FILE block
 	for (buf = uffs_BufFind(dev, obj->parent, obj->serial, UFFS_ALL_PAGES);
 		 buf != NULL;
-		 buf = uffs_BufFindFrom(dev, buf->next, obj->parent, obj->serial, UFFS_ALL_PAGES))
-	{
+		 buf = uffs_BufFindFrom(dev, buf->next, obj->parent, obj->serial, UFFS_ALL_PAGES)) {
 		if (buf->ref_count > 0) {
 			// oops ...
 			uffs_Perror(UFFS_MSG_SERIOUS, "someone still hold buf parent = %d, serial = %d, ref_count",
-				obj->parent, obj->serial, buf->ref_count);
+						obj->parent, obj->serial, buf->ref_count);
 
 			return buf->ref_count;
 		}
@@ -1682,12 +1681,11 @@ int _CheckObjBufRef(uffs_Object *obj)
 
 				for (buf = uffs_BufFind(dev, parent, serial, UFFS_ALL_PAGES);
 					 buf != NULL;
-					 buf = uffs_BufFindFrom(dev, buf->next, parent, serial, UFFS_ALL_PAGES))
-				{
+					 buf = uffs_BufFindFrom(dev, buf->next, parent, serial, UFFS_ALL_PAGES)) {
 					if (buf->ref_count != 0) {
 						// oops ...
 						uffs_Perror(UFFS_MSG_SERIOUS, "someone still hold buf parent = %d, serial = %d, ref_count",
-							parent, serial, buf->ref_count);
+									parent, serial, buf->ref_count);
 
 						return buf->ref_count;
 					}
@@ -1714,7 +1712,7 @@ URET uffs_DeleteObjectDirect(uffs_Object *obj, int *err);
  * \return U_SUCC if object is deleted successfully. 
  *	return U_FAIL if error happen, error code is set to *err.
  */
-URET uffs_DeleteObject(const char * name, int *err)
+URET uffs_DeleteObject(const char *name, int *err)
 {
 	uffs_Object *obj;
 	URET ret = U_FAIL;
@@ -1727,7 +1725,7 @@ URET uffs_DeleteObject(const char * name, int *err)
 		goto ext_unlock;
 	}
 
-	if (uffs_OpenObject(obj, name, UO_RDWR|UO_DIR) == U_FAIL) {
+	if (uffs_OpenObject(obj, name, UO_RDWR | UO_DIR) == U_FAIL) {
 		if (uffs_OpenObject(obj, name, UO_RDWR) == U_FAIL) {
 			if (err)
 				*err = UENOENT;
@@ -1737,7 +1735,7 @@ URET uffs_DeleteObject(const char * name, int *err)
 	}
 
 	return uffs_DeleteObjectDirect(obj, err);
-	
+
 ext_unlock:
 	do_ReleaseObjectResource(obj);
 
@@ -1770,7 +1768,7 @@ URET uffs_DeleteObjectDirect(uffs_Object *obj, int *err)
 	uffs_ObjectDevLock(obj);
 	work = NULL;
 	while ((work = (uffs_Object *)uffs_PoolFindNextAllocated(&_object_pool, work)) != NULL) {
-		if (work != obj && 
+		if (work != obj &&
 			work->dev &&
 			work->dev == obj->dev &&
 			work->node &&
@@ -1788,14 +1786,14 @@ URET uffs_DeleteObjectDirect(uffs_Object *obj, int *err)
 		if (node != NULL) {
 			if (err)
 				*err = UEACCES;
-			goto ext_lock;  //have sub dirs ?
+			goto ext_lock;	//have sub dirs ?
 		}
 
 		node = uffs_TreeFindFileNodeWithParent(dev, obj->serial);
 		if (node != NULL) {
 			if (err)
 				*err = UEACCES;
-			goto ext_lock;  //have sub files ?
+			goto ext_lock;	//have sub files ?
 		}
 	}
 
@@ -1830,7 +1828,7 @@ URET uffs_DeleteObjectDirect(uffs_Object *obj, int *err)
 		for (serial = 1; serial <= last_serial; serial++) {
 
 			uffs_ObjectDevUnLock(obj);
-			; // yield CPU to improve responsive when deleting large file.
+			;	// yield CPU to improve responsive when deleting large file.
 			uffs_ObjectDevLock(obj);
 
 			d_node = uffs_TreeFindDataNode(dev, parent, serial);
@@ -1843,7 +1841,7 @@ URET uffs_DeleteObjectDirect(uffs_Object *obj, int *err)
 			}
 		}
 	}
-	
+
 	// now process the suspend node
 	uffs_TreeRemoveSuspendNode(dev, node);
 	uffs_TreeInsertToErasedListTail(dev, node);
@@ -1852,7 +1850,7 @@ URET uffs_DeleteObjectDirect(uffs_Object *obj, int *err)
 
 ext_lock:
 	uffs_ObjectDevUnLock(obj);
-	
+
 	do_ReleaseObjectResource(obj);
 	uffs_PutObject(obj);
 
@@ -1898,7 +1896,7 @@ URET uffs_MoveObjectEx(uffs_Object *obj,
 
 		memcpy(&fi, buf->data, sizeof(uffs_FileInfo));
 
-		if (new_name[name_len-1] == '/')
+		if (new_name[name_len - 1] == '/')
 			name_len--;
 
 		memcpy(fi.name, new_name, name_len);
@@ -1952,7 +1950,7 @@ URET uffs_RenameObject(const char *old_name, const char *new_name, int *err)
 	new_obj = uffs_GetObject();
 
 	if (obj == NULL || new_obj == NULL) {
-		if (err) 
+		if (err)
 			*err = UEINVAL;
 		goto ext;
 	}
@@ -2007,7 +2005,7 @@ URET uffs_RenameObject(const char *old_name, const char *new_name, int *err)
 	}
 	else {
 		ret = uffs_MoveObjectEx(obj, new_obj->parent,
-									new_obj->name, new_obj->name_len);
+								new_obj->name, new_obj->name_len);
 		if (ret == U_FAIL && err)
 			*err = obj->err;
 	}
@@ -2023,4 +2021,3 @@ ext:
 
 	return ret;
 }
-
